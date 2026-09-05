@@ -2,7 +2,7 @@
 
 Lightswitch is a tiny, portable Windows utility for switching the system and app appearance between light and dark mode.
 
-![Lightswitch icon](assets/lightswitch-icon.png)
+<img src="assets/lightswitch-icon.png" alt="Lightswitch icon" width="128">
 
 ## Features
 
@@ -51,4 +51,3 @@ Windows 10 and Windows 11, 64-bit.
 ## License
 
 [MIT](LICENSE)
-
