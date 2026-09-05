@@ -2,6 +2,8 @@
 #define _UNICODE
 #include <windows.h>
 
+typedef HRESULT (WINAPI *DwmSetWindowAttributeFn)(HWND, DWORD, LPCVOID, DWORD);
+
 #define WINDOW_WIDTH  320
 #define WINDOW_HEIGHT 112
 #define TOGGLE_ID     1001
@@ -30,6 +32,22 @@ static const Strings languages[] = {
     {L"Koyu Mod", L"Windows görünümü", L"Koyu mod", L"Açık", L"Kapalı", L"Windows tema ayarlarını değiştiremedi."}
 };
 static const Strings *g_text = &languages[0];
+
+static void update_title_bar(HWND hwnd) {
+    HMODULE dwm = LoadLibraryW(L"dwmapi.dll");
+    if (!dwm) return;
+    DwmSetWindowAttributeFn setAttribute =
+        (DwmSetWindowAttributeFn)GetProcAddress(dwm, "DwmSetWindowAttribute");
+    if (setAttribute) {
+        BOOL enabled = g_dark;
+        /* Windows 10 20H1+ and Windows 11. */
+        if (setAttribute(hwnd, 20, &enabled, sizeof(enabled)) < 0) {
+            /* Older supported Windows 10 builds used attribute 19. */
+            setAttribute(hwnd, 19, &enabled, sizeof(enabled));
+        }
+    }
+    FreeLibrary(dwm);
+}
 
 static void select_language(void) {
     LANGID id = GetUserDefaultUILanguage();
@@ -165,6 +183,7 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message, WPARAM wparam, LPAR
             BOOL next = !g_dark;
             if (write_dark_mode(next)) {
                 g_dark = next;
+                update_title_bar(hwnd);
                 InvalidateRect(hwnd, NULL, FALSE);
             } else {
                 MessageBoxW(hwnd, g_text->error, L"Lightswitch", MB_OK | MB_ICONERROR);
@@ -187,6 +206,7 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT message, WPARAM wparam, LPAR
             BOOL next = !g_dark;
             if (write_dark_mode(next)) {
                 g_dark = next;
+                update_title_bar(hwnd);
                 InvalidateRect(hwnd, NULL, FALSE);
             }
             return 0;
@@ -225,6 +245,7 @@ static int run_app(void) {
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
         x, y, width, height, NULL, NULL, instance, NULL);
     if (!hwnd) return 2;
+    update_title_bar(hwnd);
     ShowWindow(hwnd, SW_SHOW);
     UpdateWindow(hwnd);
     MSG msg;
